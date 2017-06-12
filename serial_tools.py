@@ -6,20 +6,31 @@ import logging
 
 def get_ports(port_name = None):
     ports = []
+    mbedPort = None
     port = None
     for comport in list_ports.comports():     
         if port_name in comport[1]:
             print "Get mbed port"
             port = comport[0]
+            mbedPort = comport[0]
         else:
             port = comport[0]
         if (port.startswith('/dev/ttyACM') or port.startswith('/dev/ttyUSB') or
                 port.startswith('COM') or
                 port.startswith('/dev/cu.')):
             ports.append(port)
-    if  port != None:
-        ports = [port] + ports
+    # Move mbePort to the head of the array
+    if mbedPort != None:
+        ports.remove(mbedPort)
+        ports.insert(0, mbedPort)
     return ports
+
+# def detect_customer_port(port_name):
+#     isDetected= False
+#     for comport in list_ports.comports():     
+#         if port_name in comport[1]:
+#             isDetected = True
+#     return isDetected
 
 class Serial(object):
 
@@ -40,11 +51,16 @@ class Serial(object):
             self.serial.close()
 
         try:
+            # self.serial = serial.Serial(port=port,
+            #                             baudrate=baud,
+            #                             bytesize=bytesize,
+            #                             stopbits=stopbits,
+            #                             parity=PARITY_DICT[parity],
+            #                             timeout=0.2)
             self.serial = serial.Serial(port=port,
                                         baudrate=baud,
                                         bytesize=bytesize,
                                         stopbits=stopbits,
-                                        parity=PARITY_DICT[parity],
                                         timeout=0.2)
             self.tx_queue.queue.clear()
             self.rx_queue.queue.clear()
@@ -109,3 +125,26 @@ class Serial(object):
                 self.warn()
 
         logging.info('rx thread exits')
+
+
+
+
+
+if __name__ == "__main__":
+    ports = get_ports('mbed') 
+    
+    # Create instance of Serial
+    ser = None
+    def onRev():
+        print(ser.read())
+
+    def onFailed():
+        print("Error!")
+
+    ser = Serial(onRev, onFailed)
+
+    # ser.start(ports[0], 115200, 8, 1, 0) 
+    ser.start('COM45', 115200, 8, 1, 0)
+
+  
+  

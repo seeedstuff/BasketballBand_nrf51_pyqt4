@@ -8,6 +8,8 @@ import sys, os, datetime, time, win32api
 import numpy as np
 #from pyqtgraph.Qt import QtGui, QtCore
 from PyQt4 import QtGui, QtCore
+from PyQt4.QtCore import *
+# from PyQt4.QtCore import *
 from pyqtgraph.flowchart import Flowchart
 from pyqtgraph.dockarea import *
 import pyqtgraph as pg
@@ -15,7 +17,9 @@ import numpy as np
 from Communicate import *
 from copy_file import *
 from serial_tools import *
-from subprocess import call
+import subprocess
+import threading
+
 
 
 class MainWindow:
@@ -24,9 +28,11 @@ class MainWindow:
         self.port = None
         self.code = None
         self.printer_reset =False
-        self.printer = Printer()
-        
+        self.printer = Printer()                
+
         # test result
+        self.upload_thread_run_once = False
+        self.upload_state = 0  # -1 - fail, 0 - default, 1 - ok
         self.isCharge_ok = None
         self.isFlash_ok = None
         self.isComStart = False        
@@ -107,7 +113,7 @@ class MainWindow:
         self.dock3.addWidget(self.plot6)
         self.dock4.addWidget(self.win_drive)
         self.dock4.addWidget(self.btn1)
-        #self.dock4.addWidget(self.btn2)
+        # self.dock4.addWidget(self.btn2)
 
         self.data1 = [0]
         self.data2 = [0]
@@ -137,32 +143,21 @@ class MainWindow:
         self.clear_log()
         self.isCharge_ok = None
         self.isFlash_ok = None
-        self.printer_reset = False
+        # self.printer_reset = False
         self.isComStart = False
         
     def resume_serve(self):
         if self.com:            
             self.com.close()
-            self.resetState()            
-            print "Close Serial!"
+            # self.com = None
+            self.resetState()
 
     def start_serve(self):
         self.com_prot_init()
 
     def com_prot_init(self):        
         self.resetState()
-        if self.com == None:
-            print "Serial init!"
-            port = str(self.com_ports.currentText())
-            ser = serial.Serial(port, baudrate = 115200)
-            ser.flush()
-            self.com = Communicate(ser)
-            self.com.enable_charge()
-        else:
-            print "Serial open"            
-            self.com.open()
-            self.isComStart = True
-        self.isComStart = True
+        # self.resume_serve() 
         self.add_log("")
         self.add_log("")
         self.add_log("")
@@ -174,15 +169,52 @@ class MainWindow:
         self.add_log(" #####      #     #     #  ######      #")
         self.add_log("      #     #     #######  #   #       #")
         self.add_log("#     #     #     #     #  #    #      #")
-        self.add_log(" #####      #     #     #  #     #     #")
-        print "Start Serial!"
+        self.add_log(" #####      #     #     #  #     #     #")       
+        port = str(self.com_ports.currentText())
+        if self.com == None:
+            print "Serial init!"            
+            try: 
+                ser = serial.Serial(port, baudrate = 115200)
+                self.isComStart = True
+                # ser.flush()
+                self.com = Communicate(ser)
+                # self.com.enable_charge()
+            except Exception as ex:
+                print ex
+                return None
+        else:
+            print "COM port instanced!" 
+            try:                   
+                self.com.open()
+                self.isComStart = True
+                print("Start Serial!")
+            except Exception as ex:
+                print(ex)
+                self.isComStart = False
+                self.add_log("")
+                self.add_log("")
+                self.add_log("")
+                self.add_log("")
+                self.add_log("")
+                self.add_log("")
+                self.add_log("#######  ######   ######   #######  ######")
+                self.add_log("#        #     #  #     #  #     #  #     #")
+                self.add_log("#        #     #  #     #  #     #  #     #")
+                self.add_log("#####    ######   ######   #     #  ######")
+                self.add_log("#        #   #    #   #    #     #  #   #")
+                self.add_log("#        #    #   #    #   #     #  #    #")
+                self.add_log("#######  #     #  #     #  #######  #     #")
+                self.add_log("")
+                self.add_log("")
+                print("Open Serial failed!")
+        
 
     def destroy_com_port(self):
         if self.com:
             self.resetState()
             self.com.close()
-            del self.com
-            self.com = None
+            # del self.com
+            # self.com = None
 
     def add_log(self, str):
         #self.log_box.appendPlainText('[' + datetime.datetime.now().strftime("%H:%M:%S") + "] " + str)
@@ -191,26 +223,47 @@ class MainWindow:
     def clear_log(self):
         self.log_box.clear()
 
+    # Thread of uploading firmware by pyocd-flashtool
+    def T_upload(self, hexFilePath):
+        errOut = os.popen("pyocd-flashtool -t nrf51 " + hexFilePath).read()        
+        if "100%" in errOut:
+            self.upload_state = 1
+            # After uploaded firmware, restart Serial port and begin testing.
+            # self.com_prot_init()  # After upload FW access test part
+            # try:
+            #     self.com_prot_init()  # After upload FW access test part
+            # except Exception as e:
+            #     print(e)
+        else:
+            self.upload_state = -1        
+        # If upload OK, than begin test part
+        self.upload_thread_run_once = True
+            
+        
+        
+    # Upload factory firmware, this produce part will be done with mobile phone OTA
     def upload_product_fw(self):        
-        #self.resume_serve()
-        self.destroy_com_port()
-        drive = str(self.win_drive.currentText().toString())
-        time.sleep(.5)
-        os.system("cp hex\\product_fw\\wristband.hex " + drive)
-        self.add_log("Upload firmware successfull!")        
-        #self.start_serve()
+        # self.destroy_com_port()
+        # Check if test board has connected to computer
+        
+        self.add_log("Uploading......") 
+        path = "hex/wristband.hex"           
+        t = threading.Thread(target=self.T_upload, args=(path,))
+        t.start()
 
-    def upload_test_fw(self):        
-        #self.resume_serve()
-        self.destroy_com_port()        
-        drive = str(self.win_drive.currentText())
-        os.system("cp hex\\test_fw\\wristband.hex " + drive)
-        self.add_log("Upload firmware successfull!")
-        #self.destroy_com_port()
-        #self.start_serve()
+    # Upload firmware for test
+    def upload_test_fw(self):         
+        if self.com != None:
+            if self.com.is_open():
+                self.com.close()
+        self.add_log("Uploading......")
+        path = 'hex/Seeed_Test_Wristband_final_NRF51_DK.hex'
+        t = threading.Thread(target=self.T_upload, args=(path,))
+        t.start()
+
 
     def report_error(self, error):
-        self.destroy_com_port()
+        # self.destroy_com_port()
         self.add_log("")
         self.add_log("")
         self.add_log("")
@@ -229,7 +282,8 @@ class MainWindow:
 
     def update(self):    
         if self.com != None and self.isComStart:
-        #if self.com != None:
+        # if self.com != None and self.com.is_open():
+        #if self.com != None:                        
             self.com.listen()
             if self.com.event == self.com.event_data_streaming:
                 self.data1.append(10*float(self.com.acc[0]))
@@ -264,10 +318,6 @@ class MainWindow:
                         float(self.com.acc[2]) > 0.4  and \
                         float(self.com.acc[2]) < 0.7:
                         #self.add_log("ACC and GYRO OK!")
-
-                        if OPEN_PRINTER == True:
-                            self.resume_serve()                            
-                            self.printer.print_qrcode(self.code)
                             self.clear_log()                                                        
                             self.add_log("")
                             self.add_log("")
@@ -280,19 +330,23 @@ class MainWindow:
                             self.add_log("      ######   #     #   #####    #####")
                             self.add_log("      #        #######        #        #")
                             self.add_log("      #        #     #  #     #  #     #")
-                            self.add_log("      #        #     #   #####    #####")                            
+                            self.add_log("      #        #     #   #####    #####") 
+                            # Save Mac Address and UID to file
+                            self.saveMacAddrUID(self.code)                            
+                            self.com.close()
+                            self.isComStart = False
+
 
 
             elif self.com.event == self.com.event_getMac:
+                # Mac address will be combined with UID, see condition com.event_getUID
+                # self.add_log(self.com.mac)
                 pass
-                #self.add_log('   [Mac]: ' + self.com.mac)
+                
                   
             elif self.com.event == self.com.event_getUID:
                 #self.add_log('   [UID]: ' + self.com.uid)                            
-                self.code = 'mac:' + self.com.mac + ' uuid:' + self.com.uid               
-                #self.add_log("ACC and GYRO Test!")
-                #self.add_log("")
-                #self.add_log("")
+                self.code = self.com.mac + self.com.uid               
 
 
             elif self.com.event == self.com.event_flash_test_pass:
@@ -345,20 +399,34 @@ class MainWindow:
                     print "com.event: ", self.com.event
                     if self.com.event == self.com.event_doneCharge:
                         self.isCharge_ok = True
+                        print('[Charge]: pass!')
                         #self.add_log("[Charge]: pass!") 
                         #self.com.disable_charge()
                     elif self.com.event ==self.com.event_failCharge:
                         self.isCharge_ok = False
-                        #self.add_log("[Charge]: failed!")
+                        print("[Charge]: failed!")
                         self.report_error("[Charge]: failed!") 
 
                     self.com.disable_charge()  
 
                 elif self.com.event == self.com.event_charging:
                     self.isCharge_ok = False
-                    #self.add_log("[Charge]: error!")
-                    self.report_error("[Charge]: error!")           
+                    self.report_error("[Charge]: error!")
         
+        if self.upload_thread_run_once == True:
+            self.upload_thread_run_once = False            
+            if self.upload_state == 1:                
+                self.add_log('Uploading successfull!')
+            elif self.upload_state == -1:                
+                self.add_log('Uploading failed!')
+            self.upload_state = 0
+        
+    def saveMacAddrUID(self, content):
+        savefile = open('macAddrUID.txt', 'a')
+        savefile.write(content)
+        savefile.write("\r\n")
+        savefile.close()
+    
     def show(self):
         self.win.show()
         timer = QtCore.QTimer()
@@ -369,22 +437,9 @@ class MainWindow:
 
     def __del__(self):
         self.resume_serve()
-        del self.com
+        # del self.com
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__': 
-    main_win = MainWindow()
-    main_win.add_log(" ")
-    main_win.add_log(" ")
-    main_win.add_log(" ")
-    main_win.add_log(" ")
-    main_win.add_log(" ")
-    main_win.add_log("     #####   #######     #     ######   #######")
-    main_win.add_log("    #     #     #       # #    #     #     #")
-    main_win.add_log("    #           #      #   #   #     #     #")
-    main_win.add_log("     #####      #     #     #  ######      #")
-    main_win.add_log("          #     #     #######  #   #       #")
-    main_win.add_log("    #     #     #     #     #  #    #      #")
-    main_win.add_log("     #####      #     #     #  #     #     #")
-    main_win.add_log(" ")    
+    main_win = MainWindow()   
     main_win.show()

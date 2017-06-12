@@ -5,7 +5,7 @@ from time import sleep
 class Communicate:                        
     def __init__(self, bus):
         self.bus = bus
-        self.DEBUG = False
+        self.DEBUG = True
 
         self.event_begin = 0
         self.event_discharge = 1
@@ -26,7 +26,7 @@ class Communicate:
 
     def listen(self):
         try:
-            self.bus.flush()
+            # self.bus.flush()
             line = self.bus.readline()
             if self.DEBUG:
                 print line
@@ -34,7 +34,8 @@ class Communicate:
             if "acc" in line:
                 self.event = self.event_data_streaming
                 self.update_acc_gyro_data(line)
-            elif 'WeBuzz Wristband' in line:
+            # elif 'WeBuzz Wristband' in line:
+            elif 'Wristband' in line:
                 self.event = self.event_begin 
             elif "recharge:0" in line:
                 self.event = self.event_failCharge
@@ -55,35 +56,45 @@ class Communicate:
             elif "flash:1" in line:
                 self.event = self.event_flash_test_pass
         except IOError as e:
-            self.bus.close()
+            print(e)
+            # self.bus.close()
 
 
 
     def disable_charge(self):
-        self.bus.flush()
-        self.bus.write('charge_0\r\n')
-        sleep(.5)
-        self.bus.write('charge_0\r\n')
-        sleep(.5)
-        self.bus.write('charge_0\r\n')
-        sleep(.5)
-        self.bus.write('charge_0\r\n')
-        sleep(.5)
-        if True == self.DEBUG:
-            print 'Disabled charge!'
+        try:
+            # self.bus.flush()
+            self.bus.write('charge_0\r\n')
+            sleep(.5)
+            self.bus.write('charge_0\r\n')
+            sleep(.5)
+            self.bus.write('charge_0\r\n')
+            sleep(.5)
+            self.bus.write('charge_0\r\n')
+            sleep(.5)
+            self.bus.flush()
+            if True == self.DEBUG:
+                print 'Disabled charge!'
+        except Exception as ex:
+            print("being disable charge" + ex)
 
     def enable_charge(self):
-        self.bus.flush()    
-        self.bus.write('charge_1\r\n')
-        sleep(.5)
-        self.bus.write('charge_1\r\n')
-        sleep(.5)
-        self.bus.write('charge_1\r\n')
-        sleep(.5)
-        self.bus.write('charge_1\r\n')
-        sleep(.5)
-        if True == self.DEBUG:
-            print 'Enabled charge!'
+        # self.bus.flush()
+        try:    
+            self.bus.flush()
+            self.bus.write('charge_1\r\n')
+            sleep(.5)
+            self.bus.write('charge_1\r\n')
+            sleep(.5)
+            self.bus.write('charge_1\r\n')
+            sleep(.5)
+            self.bus.write('charge_1\r\n')
+            sleep(.5)
+            self.bus.flush()
+            if True == self.DEBUG:
+                print 'Enabled charge!'
+        except Exception as ex:
+            print("being enable charge" + ex)
 
 
     def get_charge_state(self):
@@ -109,19 +120,25 @@ class Communicate:
         return ret
 
     def update_acc_gyro_data(self, str):
-        acc_gryo = str.replace('\r\n', '').split(',')
-        self.acc = acc_gryo[0].split(':')[1].split(' ')
-        self.gyro = acc_gryo[1].split(':')[1].split(' ')
+        try:
+            acc_gryo = str.replace('\r\n', '').split(',')
+            self.acc = acc_gryo[0].split(':')[1].split(' ')
+            self.gyro = acc_gryo[1].split(':')[1].split(' ')
+        except Exception as e:
+            print e
 
 
     def update_mac_addr(self, str):
-        self.mac =  str.replace('\r\n', '').replace(',', '').split(': ')[1]
+        # self.mac =  str.replace('\r\n', '').replace(',', '').split(': ')[1]
+        self.mac = str
 
     def update_uid(self, str):
-         self.uid = str.replace('\r\n', '').replace(',', '').split(': ')[1]
+        #  self.uid = str.replace('\r\n', '').replace(',', '').split(': ')[1]
+        self.uid = str
 
     def close(self):
         self.bus.close()
+        print('Close serialport.')
 
     def open(self):
         self.bus.open()
