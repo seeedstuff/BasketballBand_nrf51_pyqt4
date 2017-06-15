@@ -7,6 +7,7 @@ class Communicate:
         self.bus = bus
         self.DEBUG = True
 
+        self.targetBoard = -1  # target board being tested, 1 - WeBuzz Wristband , 2 - WeBuzz Ball
         self.event_begin = 0
         self.event_discharge = 1
         self.event_charging = 2
@@ -35,16 +36,20 @@ class Communicate:
                 self.event = self.event_data_streaming
                 self.update_acc_gyro_data(line)
             # elif 'WeBuzz Wristband' in line:
-            elif 'Wristband' in line:
+            elif 'WeBuzz Wristband' in line:
+                self.targetBoard = 1
                 self.event = self.event_begin 
-            elif "recharge:0" in line:
-                self.event = self.event_failCharge
-            elif "recharge:1" in line:
-                self.event = self.event_doneCharge           
-            elif "charge:0" in line:
-                self.event = self.event_discharge            
-            elif "charge:1" in line:
-                self.event = self.event_charging
+            elif 'WeBuzz Ball' in line:
+                self.targetBoard = 2
+                self.event = self.event_begin                
+            # elif "recharge:0" in line:
+            #     self.event = self.event_failCharge
+            # elif "recharge:1" in line:
+            #     self.event = self.event_doneCharge           
+            # elif "charge:0" in line:
+            #     self.event = self.event_discharge            
+            # elif "charge:1" in line:
+            #     self.event = self.event_charging
             elif "MAC" in line:
                 self.event = self.event_getMac
                 self.update_mac_addr(line)
@@ -57,6 +62,9 @@ class Communicate:
                 self.event = self.event_flash_test_pass
         except IOError as e:
             print(e)
+            sys.exit(1)
+
+
             # self.bus.close()
 
 
@@ -76,7 +84,7 @@ class Communicate:
             if True == self.DEBUG:
                 print 'Disabled charge!'
         except Exception as ex:
-            print("being disable charge" + ex)
+            print(ex)
 
     def enable_charge(self):
         # self.bus.flush()
@@ -94,7 +102,7 @@ class Communicate:
             if True == self.DEBUG:
                 print 'Enabled charge!'
         except Exception as ex:
-            print("being enable charge" + ex)
+            print(ex)
 
 
     def get_charge_state(self):

@@ -8,8 +8,8 @@ shutil.rmtree("dist", ignore_errors=True)
 import py2exe
 import sys
 
-includes = ['PyQt4', 'PyQt4.QtGui', 'PyQt4.QtSvg', 'sip', 'pyqtgraph.graphicsItems', 'pyOCD']
-excludes = ['_gtkagg', '_tkagg', 'bsddb', 'curses', 'email', 'pywin.debugger','pyocd-flashtool'
+includes = ['PyQt4', 'PyQt4.QtGui', 'PyQt4.QtSvg', 'sip', 'pyqtgraph.graphicsItems']
+excludes = ['_gtkagg', '_tkagg', 'bsddb', 'curses', 'email', 'pywin.debugger',
             'pywin.debugger.dbgcon', 'pywin.dialogs', 'tcl',
             'Tkconstants', 'Tkinter', 'zmq']
 if sys.version[0] == '2':
@@ -25,7 +25,7 @@ other_resources = []
 data_files = []
 setup(
   data_files=data_files,
-  windows=['main.py'] ,
+  windows=['main.py'],
   options={"py2exe": {"excludes": excludes,
                       "includes": includes,
                       "dll_excludes": dll_excludes,

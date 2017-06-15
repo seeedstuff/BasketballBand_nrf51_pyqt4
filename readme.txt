@@ -1,9 +1,6 @@
 # Require environment
 * windows 
 * python2.7
-* pyQT4
-* numpy
-* pyOCD
 * py2exe for windows
 * gitbash (Not require)
 
