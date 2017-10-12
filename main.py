@@ -360,31 +360,58 @@ class MainWindow:
                 # 平摆时 - acc_x = 0, acc_y = 0, acc_z = 10
                 # 斜摆时 - acc_x = -6, acc_y = -6, acc_z = 6
                 #print self.com.acc[0], self.com.acc[1], self.com.acc[2] 
-                
+                # Ball board acc pass state
+                    #if self.targetBoard == 1:
+                    #    if float(self.com.acc[0]) > -0.7 and \
+                    #        float(self.com.acc[0]) < -0.4 and \
+                    #        float(self.com.acc[1]) > -0.7 and \
+                    #        float(self.com.acc[1]) < -0.4 and \
+                    #        float(self.com.acc[2]) > 0.4  and \
+                    #        float(self.com.acc[2]) < 0.7:
+                    #        accTestResult = True
+                    
                 # if self.printer_reset == True and self.isCharge_ok == True and self.isFlash_ok == True:                    
                 if self.isFlash_ok == True: 
                     accTestResult = False  
 
                     # Wristband board acc pass state               
-                    if self.targetBoard == 2:
-                        if float(self.com.acc[0]) > 0.6 and \
-                            float(self.com.acc[0]) < 0.7 and \
-                            float(self.com.acc[1]) > 0.5 and \
-                            float(self.com.acc[1]) < 0.6 and \
-                            float(self.com.acc[2]) > 0.6  and \
-                            float(self.com.acc[2]) < 0.7:
-                            accTestResult = True
+                    # if self.targetBoard == 2:
+                    #     if float(self.com.acc[0]) > 0.6 and \
+                    #         float(self.com.acc[0]) < 0.7 and \
+                    #         float(self.com.acc[1]) > 0.5 and \
+                    #         float(self.com.acc[1]) < 0.6 and \
+                    #         float(self.com.acc[2]) > 0.6  and \
+                    #         float(self.com.acc[2]) < 0.7:
+                    #         accTestResult = True
 
-                    # Ball board acc pass state
-                    if self.targetBoard == 1:
-                        if float(self.com.acc[0]) > -0.7 and \
-                            float(self.com.acc[0]) < -0.4 and \
-                            float(self.com.acc[1]) > -0.7 and \
-                            float(self.com.acc[1]) < -0.4 and \
-                            float(self.com.acc[2]) > 0.4  and \
-                            float(self.com.acc[2]) < 0.7:
-                            accTestResult = True 
+                    # # Ball board acc pass state
+                    # if self.targetBoard == 1:
+                    #     if float(self.com.acc[0]) > 0.4 and \
+                    #         float(self.com.acc[0]) < 0.7 and \
+                    #         float(self.com.acc[1]) > 0.4 and \
+                    #         float(self.com.acc[1]) < 0.7 and \
+                    #         float(self.com.acc[2]) > 0.4  and \
+                    #         float(self.com.acc[2]) < 0.7:
+                    #         accTestResult = True 
 
+                    # V1.0 data comparation set
+                    if float(self.com.acc[0]) > 0.4 and \
+                        float(self.com.acc[0]) < 0.7 and \
+                        float(self.com.acc[1]) > 0.4 and \
+                        float(self.com.acc[1]) < 0.7 and \
+                        float(self.com.acc[2]) > 0.4  and \
+                        float(self.com.acc[2]) < 0.7:
+                        accTestResult = True
+
+                    # V2.0 data comparation set
+                    # if float(self.com.acc[0]) > -0.7 and \
+                    #     float(self.com.acc[0]) < -0.4 and \
+                    #     float(self.com.acc[1]) > -0.7 and \
+                    #     float(self.com.acc[1]) < -0.4 and \
+                    #     float(self.com.acc[2]) > 0.4  and \
+                    #     float(self.com.acc[2]) < 0.7:
+                    #     accTestResult = True
+                    
                     if accTestResult == True:
                         self.clear_log()                                                        
                         self.add_log("")
